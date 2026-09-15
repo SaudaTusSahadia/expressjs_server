@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
-import {Pool} from 'pg';
+import { Pool } from 'pg';
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({path:path.join(process.cwd(), '.env')});
+dotenv.config({ path: path.join(process.cwd(), '.env') });
 
 const app = express();
 const port = 5000;
@@ -12,7 +12,7 @@ const pool = new Pool({
   connectionString: `${process.env.CONNECTION_STR}`,
 });
 
-const initDB = async() => {
+const initDB = async () => {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
@@ -39,6 +39,7 @@ const initDB = async() => {
     );
   `);
 };
+
 initDB();
 
 //parser
@@ -49,8 +50,23 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Hello World Node Js!');
 });
 
-app.post("/", (req: Request, res: Response) => {
-  console.log(req.body);
+app.post("/users", async (req: Request, res: Response) => {
+  const { name, email } = req.body;
+
+  try {
+    const result = await pool.query(`INSERT INTO users(name, email) VALUES($1, $2) RETURNING *`, [name, email]);
+    // console.log(result.rows[0]);
+    res.status(201).json({
+      success: true,
+      message: "data inserted successfully",
+      data: result.rows[0]
+    });
+  } catch (err: any) {
+    res.status(500).json({
+      success: false,
+      message: err.message
+    })
+  }
 
   res.status(201).json({
     success: true,
